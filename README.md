@@ -1,18 +1,18 @@
-# koa-swagger-router [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Dependency Status][daviddm-image]][daviddm-url] [![Coverage percentage][coveralls-image]][coveralls-url]
-> A koa router that builds a full swagger specification
+# http-swagger-router [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Dependency Status][daviddm-image]][daviddm-url] [![Coverage percentage][coveralls-image]][coveralls-url]
+> A http like router using generators that builds a full swagger specification
 
 
 ## Install
 
 ```sh
-$ npm install --save koa-swagger-router
+$ npm install --save http-swagger-router
 ```
 
 
 ## Usage
 
 ```js
-var koaSwaggerRouter = require('koa-swagger-router');
+var httpSwaggerRouter = require('http-swagger-router');
 
 // todo
 ```
@@ -22,11 +22,11 @@ var koaSwaggerRouter = require('koa-swagger-router');
 MIT © [Andre Gloria](andrglo.com)
 
 
-[npm-image]: https://badge.fury.io/js/koa-swagger-router.svg
-[npm-url]: https://npmjs.org/package/koa-swagger-router
-[travis-image]: https://travis-ci.org/andrglo/koa-swagger-router.svg?branch=master
-[travis-url]: https://travis-ci.org/andrglo/koa-swagger-router
-[daviddm-image]: https://david-dm.org/andrglo/koa-swagger-router.svg?theme=shields.io
-[daviddm-url]: https://david-dm.org/andrglo/koa-swagger-router
-[coveralls-image]: https://coveralls.io/repos/andrglo/koa-swagger-router/badge.svg
-[coveralls-url]: https://coveralls.io/r/andrglo/koa-swagger-router
+[npm-image]: https://badge.fury.io/js/http-swagger-router.svg
+[npm-url]: https://npmjs.org/package/http-swagger-router
+[travis-image]: https://travis-ci.org/andrglo/http-swagger-router.svg?branch=master
+[travis-url]: https://travis-ci.org/andrglo/http-swagger-router
+[daviddm-image]: https://david-dm.org/andrglo/http-swagger-router.svg?theme=shields.io
+[daviddm-url]: https://david-dm.org/andrglo/http-swagger-router
+[coveralls-image]: https://coveralls.io/repos/andrglo/http-swagger-router/badge.svg
+[coveralls-url]: https://coveralls.io/r/andrglo/http-swagger-router

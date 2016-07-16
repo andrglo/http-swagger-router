@@ -1,389 +1,169 @@
 'use strict';
 
-var koa = require('koa');
-var request = require('supertest');
-var assert = require('assert');
-var http = require('http');
-var chai = require('chai');
-var co = require('@ayk/co');
-var expect = chai.expect;
+const assert = require('assert');
+const chai = require('chai');
+const co = require('@ayk/co');
+const expect = chai.expect;
 chai.should();
-var gutil = require('gulp-util');
-var parser = require('swagger-parser');
+const parser = require('swagger-parser');
 
-var RouterFactory = require('../src');
+const Router = require('../src');
+const schema = require('./schemas/person.json');
 
-function logError(done) {
-  return function(error, res) {
-    if (error) {
-      res = res.res;
-      gutil.log('Error response text / body:',
-        gutil.colors.red(res.text), '/', res.body);
-    }
-    done(error);
-  };
-}
-
-function log() {
-  console.log.apply(null, Array.prototype.slice.call(arguments)
-    .map(arg => JSON.stringify(arg, null, '  ')));
-}
+const isGenerator = gen => gen.next && gen.throw;
 
 const effect = (o) => Promise.resolve(o);
-const pubRoute = function*(ctx, { allCaughtUp }) {
-  ctx.body = { executed: yield co.effect(effect, allCaughtUp) };
+const pubRoute = function *(ctx, {allCaughtUp}) {
+  ctx.body = {executed: yield co.effect(effect, allCaughtUp)};
 };
 
-module.exports = function(options) {
-
-  var agent;
-  var router;
-  before(function() {
-    var app = koa();
-    router = new RouterFactory(options.authDb);
-    router.spec.addDefinition('other', {
-      myProperty: 'invalid swagger',
+const router = new Router();
+router.spec.addDefinition('other', {
+  myProperty: 'invalid swagger',
+  properties: {
+    name: {
+      type: 'array',
+      items: {
+        type: 'string',
+        description: 'none'
+      }
+    },
+    otherProperty: {
+      type: 'object',
+      format: 'none',
       properties: {
         name: {
-          type: 'array',
-          items: {
-            type: 'string',
-            description: 'none'
-          }
-        },
-        otherProperty: {
-          type: 'object',
-          format: 'none',
-          properties: {
-            name: {
-              type: 'string'
-            }
-          }
+          type: 'string'
         }
       }
-    });
-    addStandardEntityMethods(router, 'person', options.entity);
-    router.use(function*(next) {
-      if (this.header.role === 'sa' || this.header.role === 'admin') {
-        this.state.user = {
-          admin: true
-        };
-      } else {
-        this.state.user = {
-          roles: [this.header.role]
-        };
-      }
-      this.state.db = options.db;
-      this.state.allCaughtUp = true;
-
-      this.state.authorize = function*(method, resource, spec) {
-        if (resource === '/spec' || spec.security && spec.security.length === 0) {
-          return; // has access
-        }
-        let user = this.state.user;
-        if (user.admin !== true) {
-          this.throw(403);
-        }
-      };
-
-      yield next;
-    });
-    router.get('/public', pubRoute).security([]); // => none
-    router.get('/private', function*() {
-      this.body = { executed: true };
-    });
-    router.get('/error400', function*() {
-      assert(false, 'assertion');
-    }).onError({
-      name: 'AssertionError',
-      schema: 'other'
-    });
-    router.get('/error410', function*() {
-      assert(false, 'assertion');
-    }).onError([{
-      name: 'AssertionError',
-      schema: {
-        properties: {
-          name: {
-            type: 'string'
-          }
-        }
-      },
-      status: 410,
-      show: (e, ctx) => ({ message: 'message is ' + e.message + (ctx.state ? '' : 'error')})
-    }, {
-      name: 'AssertionError',
-      schema: {
-        properties: {
-          name: {
-            type: 'string'
-          }
-        }
-      },
-      status: 400,
-      show: (e) => ({ message: 'message is ' + e.message })
-    }]);
-    app.use(router.routes());
-    agent = request(http.createServer(app.callback()));
-  });
-
-  describe('effects', function() {
-    it('do a unit test of the route', function() {
-      const gen = pubRoute({}, { allCaughtUp: false });
-      let value = gen.next();
-      expect(value.value).to.eql(co.effect(effect, false));
-      value = gen.next(false);
-      expect(value.value).to.be.undefined;
-      expect(value.done).to.be.true;
-    });
-  });
-
-  describe('resource', function() {
-    var charlie;
-    it('should always allow a request to the spec', function(done) {
-      agent
-        .get('/spec')
-        .expect(200)
-        .expect(function(res) {
-          let spec = res.body;
-          spec.should.have.property('paths');
-          spec.paths.should.have.property('/public');
-          spec.paths.should.have.property('/spec');
-          spec.paths.should.not.have.property('/private');
-        })
-        .end(logError(done));
-    });
-    it('should have a valid swagger structure in getter', function(done) {
-      let spec = router.spec.get();
-      parser.validate(spec, {
-        $refs: {
-          internal: false   // Don't dereference internal $refs, only external
-        }
-      }, function(err) {
-        if (err) {
-          gutil.log('Swagger getter specification:\n', spec);
-          gutil.log('Error:\n', gutil.colors.red(err));
-        } else {
-          expect(spec.definitions.AssertionError).to.exist;
-          done(err);
-        }
-      });
-    });
-    it('should have a valid swagger structure in request', function(done) {
-      agent
-        .get('/spec')
-        .set('Accept', 'application/json')
-        .set('role', 'sa')
-        .expect(200)
-        .end(function(err, res) {
-          if (err) {
-            done(err);
-          } else {
-            let spec = res.body;
-            parser.validate(spec, {
-              $refs: {
-                internal: false   // Don't dereference internal $refs, only external
-              }
-            }, function(err) {
-              if (err) {
-                gutil.log('Swagger specification:\n', JSON.stringify(spec, null, '  '));
-                gutil.log('Error:\n', gutil.colors.red(err));
-              } else {
-                try {
-                  expect(spec.paths['/modules'].get.responses['200']).to.eql({
-                    description: 'A list of available modules',
-                    schema: {
-                      type: 'array',
-                      items: {
-                        type: 'string'
-                      }
-                    }
-                  });
-                } catch (e) {
-                  err = e;
-                }
-              }
-              done(err);
-            });
-          }
-        });
-    });
-    it('should get the other definition', function(done) {
-      agent
-        .get('/spec?definition=other')
-        .set('role', 'sa')
-        .set('Accept', 'application/json')
-        .expect(200)
-        .expect(function(res) {
-          let definition = res.body;
-          definition.should.have.property('properties');
-        })
-        .end(logError(done));
-    });
-    it('should have a valid swagger structure only with the allowed actions', function(done) {
-      agent
-        .get('/spec')
-        .set('Accept', 'application/json')
-        .set('role', 'cr')
-        .expect(200)
-        .end(function(err, res) {
-          if (err) {
-            done(err);
-          } else {
-            let spec = res.body;
-            parser.validate(spec, {
-              $refs: {
-                internal: false   // Don't dereference internal $refs, only external
-              }
-            }, function(err) {
-              if (err) {
-                gutil.log('Swagger specification:\n', JSON.stringify(spec, null, '  '));
-                gutil.log('Error:\n', gutil.colors.red(err));
-              } else {
-                try {
-                  expect(spec.paths['/person/{name}']).to.be.undefined;
-                } catch (e) {
-                  err = e;
-                }
-              }
-              done(err);
-            });
-          }
-        });
-    });
-    it('should not get the other definition', function(done) {
-      agent
-        .get('/spec?definition=other')
-        .set('role', 'cr')
-        .set('Accept', 'application/json')
-        .expect(404)
-        .end(logError(done));
-    });
-    it('no person exists', function(done) {
-      agent
-        .get('/person/8')
-        .set('role', 'admin')
-        .set('Accept', 'application/json')
-        .expect('Content-Type', /text/)
-        .expect(404)
-        .end(logError(done));
-    });
-    it('should create a new person', function(done) {
-      let now = (new Date()).toISOString();
-      agent
-        .post('/person')
-        .set('role', 'admin')
-        .set('Content-Type', 'application/json')
-        .send({
-          name: 'Charlie'
-        })
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(function(res) {
-          let record = charlie = res.body;
-          record.should.have.property('name');
-          record.should.have.property('createdAt');
-          record.should.have.property('updatedAt');
-          record.createdAt.should.equal(record.updatedAt);
-          expect(record.createdAt).to.be.a('string');
-          expect(record.createdAt).to.above(now);
-        })
-        .end(logError(done));
-    });
-    it('should update address', function(done) {
-      charlie.address = 'Victoria St';
-      agent
-        .put('/person/' + charlie.name)
-        .set('role', 'admin')
-        .send(charlie)
-        .expect(200)
-        .expect('Content-Type', /json/)
-        .expect(function(res) {
-          let record = charlie = res.body;
-          record.should.have.property('address');
-          record.should.not.have.property('code');
-        })
-        .end(logError(done));
-    });
-    it('read charlie', function(done) {
-      agent
-        .get('/person?name=Charlie')
-        .set('role', 'admin')
-        .set('Accept', 'application/json')
-        .expect('Content-Type', /json/)
-        .expect(200)
-        .expect(function(res) {
-          let recordset = res.body;
-          expect(recordset).to.be.a('array');
-          expect(recordset.length).to.equal(1);
-          let record = recordset[0];
-          record.should.have.property('address');
-          record.should.not.have.property('code');
-        })
-        .end(logError(done));
-    });
-    it('delete charlie', function(done) {
-      agent
-        .delete('/person/Charlie')
-        .set('role', 'admin')
-        .send(charlie)
-        .set('Accept', 'application/json')
-        .expect(204)
-        .end(logError(done));
-    });
-  });
-
-  describe('Public and private resources', function() {
-    it('should allow a request to public', function(done) {
-      agent
-        .get('/public')
-        .expect(200)
-        .end(logError(done));
-    });
-    it('should deny a request to private', function(done) {
-      agent
-        .get('/private')
-        .expect(403)
-        .end(logError(done));
-    });
-  });
-
-  describe('Error status handling', function() {
-    it('Should return a 400 error', function(done) {
-      agent
-        .get('/error400')
-        .set('role', 'sa')
-        .expect(400)
-        .end(logError(done));
-    });
-    it('Should return a 410 error', function(done) {
-      agent
-        .get('/error410')
-        .set('role', 'sa')
-        .expect(410)
-        .expect(function(res) {
-          expect(res.body.message).to.equal('message is assertion');
-        })
-        .end(logError(done));
-    });
-  });
-
-};
-
-function addStandardEntityMethods(router, name, entity) {
-
-  var primaryKey = entity.schema.primaryKey()[0];
-
-  function buildCriteria(key, updatedAt) {
-    let criteria = { where: {} };
-    criteria.where[primaryKey] = key;
-    if (updatedAt !== void 0) {
-      criteria.where.updatedAt = updatedAt;
     }
-    return criteria;
   }
+});
 
-  let schema = entity.schema.get();
+addSomeCrudRoutes(router, 'person');
+
+router.get('/public', pubRoute).security([]); // => none
+router.get('/private', function*() {
+  this.body = {executed: true};
+});
+router.get('/error400', function*() {
+  assert(false, 'assertion');
+}).onError({
+  name: 'AssertionError',
+  schema: 'other'
+});
+router.get('/error410', function*() {
+  assert(false, 'assertion');
+}).onError([{
+  name: 'AssertionError',
+  schema: {
+    properties: {
+      name: {
+        type: 'string'
+      }
+    }
+  },
+  status: 410,
+  show: (e, ctx) => ({message: 'message is ' + e.message + (ctx.state ? '' : '-error')})
+}, {
+  name: 'AssertionError',
+  schema: {
+    properties: {
+      name: {
+        type: 'string'
+      }
+    }
+  },
+  status: 400,
+  show: (e) => ({message: 'message is ' + e.message})
+}]);
+
+describe('effects', function() {
+  it('Check a route', function() {
+    const gen = pubRoute({}, {allCaughtUp: false});
+    let value = gen.next();
+    expect(value.value).to.eql(co.effect(effect, false));
+    value = gen.next(false);
+    assert(value.value === undefined);
+    assert(value.done === true);
+  });
+});
+
+describe('spec', function() {
+  it('build a route to the spec', function() {
+    const service = router.findService('get', '/spec');
+    assert(Object.keys(service.params).length === 0);
+    assert(isGenerator(service.service()));
+  });
+  it('should have a valid swagger structure in getter', function(done) {
+    const spec = router.spec.get();
+    parser.validate(spec, {
+      $refs: {
+        internal: false   // Don't dereference internal $refs, only external
+      }
+    }, function(err) {
+      if (err) {
+        console.log('Swagger getter specification:\n', JSON.stringify(spec));
+        console.log('Error:\n', err);
+      } else {
+        assert(spec.definitions.AssertionError !== undefined);
+        try {
+          expect(spec.paths['/modules/{p1}/{p2}'].get.responses['200']).to.eql({
+            description: 'A list of available modules',
+            schema: {
+              type: 'array',
+              items: {
+                type: 'string'
+              }
+            }
+          });
+        } catch (e) {
+          err = e;
+        }
+      }
+      done(err);
+    });
+  });
+  it('get service and param', function() {
+    const service = router.findService('get', '/person/8');
+    expect(service.params).to.eql({name: '8'});
+    assert(isGenerator(service.service()));
+  });
+  it('get service and params', function() {
+    const service = router.findService('get', '/modules/q/b');
+    expect(service.params).to.eql({p1: 'q', p2: 'b'});
+    assert(isGenerator(service.service()));
+  });
+  it('Should return a 400 error', function(done) {
+    const service = router.findService('get', '/error400');
+    const state = {};
+    co(service.service({}, state))
+      .then(() => {
+        expect(state.status).to.equal(400);
+        expect(state.error).to.eql({message: 'assertion'});
+        done();
+      })
+      .catch(e => {
+        done(e);
+      });
+  });
+  it('Should return a 410 error', function(done) {
+    const service = router.findService('get', '/error410');
+    const state = {};
+    co(service.service({}, state))
+      .then(() => {
+        expect(state.status).to.equal(410);
+        expect(state.error).to.eql({message: 'message is assertion-error'});
+        done();
+      })
+      .catch(e => {
+        done(e);
+      });
+  });
+});
+
+function addSomeCrudRoutes(router, name, entity) {
+  const primaryKey = 'name';
   router.spec.addDefinition(name, schema);
   router.spec.addDefinition('DatabaseError', {
     properties: {
@@ -408,7 +188,7 @@ function addStandardEntityMethods(router, name, entity) {
   });
 
   let queryColumns = [];
-  Object.keys(schema.properties).map(function(key) {
+  Object.keys(schema.properties).forEach(key => {
     let column = schema.properties[key];
     if (column.type !== 'object' && column.type !== 'array') {
       queryColumns.push({
@@ -420,9 +200,16 @@ function addStandardEntityMethods(router, name, entity) {
   });
 
   router
-    .get(`/modules`, function*() {
-      this.body = ['none'];
+    .get(`/modules/:p1/:p2`, function *() {
+      return ['none'];
     })
+    .params([{
+      in: 'path',
+      name: 'p1'
+    }, {
+      in: 'path',
+      name: 'p2'
+    }])
     .onSuccess({
       description: 'A list of available modules',
       schema: {
@@ -434,8 +221,7 @@ function addStandardEntityMethods(router, name, entity) {
     });
 
   router
-    .get(`/${name}`, function*() {
-      let criteria = this.query.criteria;
+    .get(`/${name}`, function *({criteria, query}) {
       if (criteria) {
         criteria = JSON.parse(criteria);
         criteria.where = criteria.where || {};
@@ -445,12 +231,12 @@ function addStandardEntityMethods(router, name, entity) {
         };
       }
       queryColumns.forEach(column => {
-        let value = this.query[column.name];
+        let value = query[column.name];
         if (value) {
           criteria.where[column.name] = value;
         }
       });
-      this.body = yield entity.new(this.state.db).fetch(criteria);
+      return yield co.effect('fetch', criteria);
     })
     .description('Get a list of available modules')
     .summary('Summary')
@@ -469,10 +255,10 @@ function addStandardEntityMethods(router, name, entity) {
     });
 
   router
-    .get(`/${name}/:${primaryKey}`, function*() {
-      let recordset = yield entity.new(this.state.db).fetch(buildCriteria(this.params[primaryKey]));
+    .get(`/${name}/:${primaryKey}`, function *() {
+      let recordset = yield co.effect('recordset');
       if (recordset.length) {
-        this.body = recordset[0];
+        return recordset[0];
       }
     })
     .params({
@@ -488,8 +274,8 @@ function addStandardEntityMethods(router, name, entity) {
     });
 
   router
-    .post(`/${name}`, function*() {
-      this.body = yield entity.new(this.state.db).create(this.state.body);
+    .post(`/${name}`, function *({body}) {
+      return yield co.effect('create', body);
     })
     .params({
       in: 'body',
@@ -507,10 +293,9 @@ function addStandardEntityMethods(router, name, entity) {
     });
 
   router
-    .put(`/${name}/:${primaryKey}`, function*() {
-      let body = this.state.body;
-      let id = this.params[primaryKey];
-      this.body = yield entity.new(this.state.db).update(body, buildCriteria(id, body.updatedAt));
+    .put(`/${name}/:${primaryKey}`, function *({body, params}) {
+      const id = params[primaryKey];
+      return yield co.effect('update', body, id);
     })
     .params([{
       in: 'path',
@@ -531,10 +316,9 @@ function addStandardEntityMethods(router, name, entity) {
     });
 
   router
-    .delete(`/${name}/:${primaryKey}`, function*() {
-      let body = this.state.body;
-      let id = this.params[primaryKey];
-      this.body = yield entity.new(this.state.db).destroy(buildCriteria(id, body.updatedAt));
+    .delete(`/${name}/:${primaryKey}`, function *({body, params}) {
+      const id = params[primaryKey];
+      return yield co.effect('delete', id);
     })
     .params([{
       in: 'path',

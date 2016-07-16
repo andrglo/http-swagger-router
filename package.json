@@ -1,13 +1,12 @@
 {
-  "name": "koa-swagger-router",
-  "version": "4.0.1",
-  "description": "A koa router that builds a full swagger specification",
+  "name": "http-swagger-router",
+  "version": "0.0.1",
+  "description": "A http like router using generators that builds a full swagger specification",
   "homepage": "",
-  "repository": "andrglo/koa-swagger-router",
+  "repository": "andrglo/http-swagger-router",
   "author": {
     "name": "Andre Gloria",
-    "email": "andredagloria@gmail.com",
-    "url": "andrglo.com"
+    "email": "andredagloria@gmail.com"
   },
   "files": [
     "src"
@@ -20,32 +19,23 @@
   ],
   "devDependencies": {
     "chai": "^3.5.0",
-    "gulp": "^3.9.1",
-    "gulp-coveralls": "^0.1.4",
-    "gulp-eslint": "^3.0.1",
-    "gulp-istanbul": "^1.0.0",
-    "gulp-mocha": "^2.2.0",
-    "gulp-nsp": "^2.4.1",
-    "gulp-util": "^3.0.7",
-    "json-schema-entity": "^2.0.3",
-    "koa": "^1.2.0",
-    "pg-cr-layer": "^1.0.4",
-    "supertest": "^1.2.0",
+    "eslint": "^3.1.0",
+    "eslint-config-google": "^0.6.0",
+    "mocha": "^2.4.5",
     "swagger-parser": "^3.4.1"
   },
   "scripts": {
-    "prepublish": "gulp prepublish",
-    "test": "gulp"
+    "test": "mocha --bail 'test/**/*.js'",
+    "test:watch": "npm test -- --watch"
   },
   "license": "MIT",
   "dependencies": {
     "@ayk/co": "^4.6.2",
-    "co-body": "^4.2.0",
     "deep-extend": "^0.4.1",
     "findup-sync": "^0.4.2",
     "json-refs": "^2.1.6",
-    "koa-router": "^5.4.0",
     "methods": "^1.1.2",
+    "path-to-regexp": "^1.5.3",
     "title-case": "^2.1.0"
   }
 }
