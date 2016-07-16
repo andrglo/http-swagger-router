@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "maxLength": 60,
+      "required": true,
+      "primaryKey": true
+    },
+    "address": {
+      "type": "string",
+      "maxLength": 45
+    },
+    "account": {
+      "type": "string",
+      "maxLength": 5,
+      "schema": {
+        "$ref": "account",
+        "key": "code"
+      }
+    },
+    "event": {
+      "type": "string",
+      "maxLength": 5,
+      "$ref": "event"
+    },
+    "birthDate": {
+      "type": "date"
+    },
+    "code": {
+      "type": "string",
+      "enum": [
+        "one", "two"
+      ],
+      "maxLength": 6
+    },
+    "fkChildren": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "fkParent": {
+      "type": "string",
+      "maxLength": 60
+    }
+  }
+}
