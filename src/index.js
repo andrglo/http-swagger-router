@@ -255,15 +255,17 @@ methods.forEach(function(method) {
       keys,
       service: function *(ctx, state) {
         try {
-          yield * service.call(ctx, state);
-          if (this.body !== undefined) {
+          const response = yield * service(ctx, state);
+          if (response !== undefined) {
             let successStatus = thisMethod.successStatuses();
             if (successStatus.indexOf(state.status) === -1) {
               state.status = successStatus[0];
             }
+            return response;
           }
         } catch (e) {
           state.status = e.status || 500;
+          state.error = {message: e.message};
           let errors = thisMethod.errors();
           let caught = false;
           errors.forEach(error => {
