@@ -265,7 +265,10 @@ methods.forEach(function(method) {
           }
         } catch (e) {
           state.status = e.status || 500;
-          state.error = {message: e.message};
+          state.error = {
+            message: e.message,
+            stack: e.stack
+          };
           let errors = thisMethod.errors();
           let caught = false;
           errors.forEach(error => {
