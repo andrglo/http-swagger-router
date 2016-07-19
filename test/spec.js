@@ -1,4 +1,4 @@
-'use strict';
+/* eslint no-undef:0 */
 
 const assert = require('assert');
 const chai = require('chai');
@@ -159,6 +159,17 @@ describe('spec', function() {
       .catch(e => {
         done(e);
       });
+  });
+  it('mount a route', function() {
+    const router2 = new Router();
+    router2.get('/public', pubRoute);
+    router.mount('/test/', router2);
+    let service = router.findService('get', '/test/public');
+    assert(Object.keys(service.params).length === 0);
+    assert(isGenerator(service.service()));
+    service = router.findService('get', '/test/spec');
+    assert(Object.keys(service.params).length === 0);
+    assert(isGenerator(service.service()));
   });
 });
 

@@ -201,7 +201,7 @@ class Router {
     options = options || {};
     const prefix = options.prefix;
     const spec = new Spec(options);
-    routersData.set(this, {prefix, spec, router: {}});
+    routersData.set(this, {prefix, spec, router: {}, mounted: []});
     const self = this;
     this
       .get('/spec', function *() {
@@ -221,24 +221,38 @@ class Router {
     return routersData.get(this).spec;
   }
 
+  mount(prefix, router) {
+    routersData.get(this).mounted.push({prefix, router});
+  }
+
   findService(method, path) {
-    const services = routersData.get(this).router[method] || [];
-    var service;
-    for (const data of services) {
-      const match = data.regExp.exec(path);
-      if (match) {
-        const params = {};
-        data.keys.forEach((key, index) => {
-          params[key.name] = match[index + 1];
-        });
-        service = {
-          params,
-          service: data.service
-        };
-        break;
+    const routers = [{
+      prefix: '/',
+      router: this
+    }].concat(routersData.get(this).mounted);
+    for (const router of routers) {
+      if (path.startsWith(router.prefix)) {
+        const services = routersData.get(router.router).router[method] || [];
+        var service;
+        for (const data of services) {
+          const match = data.regExp.exec(path.substr(router.prefix.length - 1));
+          if (match) {
+            const params = {};
+            data.keys.forEach((key, index) => {
+              params[key.name] = match[index + 1];
+            });
+            service = {
+              params,
+              service: data.service
+            };
+            break;
+          }
+        }
+        if (service) {
+          return service;
+        }
       }
     }
-    return service;
   }
 
 }
@@ -367,12 +381,12 @@ function toJsonSchema(schema, level) {
     const value = schema[key];
     if (level === 0) {
       if (['properties', 'title', 'description', 'type']
-          .indexOf(key) === -1) {
+            .indexOf(key) === -1) {
         key = 'x-' + key;
       }
     } else {
       if (['properties', 'title', 'description', 'type', 'schema', 'items']
-          .indexOf(key) === -1) {
+            .indexOf(key) === -1) {
         key = 'x-' + key;
       }
     }
@@ -402,8 +416,8 @@ function toJsonSchema(schema, level) {
       }
       const value = source[key];
       if (['title', 'description', 'type', 'schema', 'properties',
-          '$ref', 'maxLength', 'format', 'enum', 'items']
-          .indexOf(key) === -1) {
+            '$ref', 'maxLength', 'format', 'enum', 'items']
+            .indexOf(key) === -1) {
         key = 'x-' + key;
       }
       property[key] = value;
@@ -426,7 +440,7 @@ function toJsonSchema(schema, level) {
           Object.keys(source.items).forEach(function(key) {
             const value = source.items[key];
             if (['type']
-                .indexOf(key) === -1) {
+                  .indexOf(key) === -1) {
               key = 'x-' + key;
             }
             property.items[key] = value;
