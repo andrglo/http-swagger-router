@@ -30,7 +30,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@ayk/co": "^4.6.2",
+    "@ayk/co": "^4.6.4",
     "deep-extend": "^0.4.1",
     "findup-sync": "^0.4.2",
     "json-refs": "^2.1.6",
