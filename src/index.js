@@ -193,7 +193,7 @@ class Spec {
 
 }
 
-const routersData = new WeakMap();
+const routersData = '_data';
 
 class Router {
 
@@ -201,7 +201,7 @@ class Router {
     options = options || {};
     const prefix = options.prefix;
     const spec = new Spec(options);
-    routersData.set(this, {prefix, spec, router: {}, mounted: []});
+    this[routersData] = {prefix, spec, router: {}, mounted: []};
     const self = this;
     this
       .get('/spec', function *() {
@@ -218,21 +218,21 @@ class Router {
   }
 
   get spec() {
-    return routersData.get(this).spec;
+    return this[routersData].spec;
   }
 
   mount(prefix, router) {
-    routersData.get(this).mounted.push({prefix, router});
+    this[routersData].mounted.push({prefix, router});
   }
 
   findService(method, path) {
     const routers = [{
       prefix: '/',
       router: this
-    }].concat(routersData.get(this).mounted);
+    }].concat(this[routersData].mounted);
     for (const router of routers) {
       if (path.startsWith(router.prefix)) {
-        const services = routersData.get(router.router).router[method] || [];
+        const services = router.router[routersData].router[method] || [];
         var service;
         for (const data of services) {
           const match = data.regExp.exec(path.substr(router.prefix.length - 1));
@@ -259,7 +259,7 @@ class Router {
 
 methods.forEach(function(method) {
   Router.prototype[method] = function(path, service) {
-    let it = routersData.get(this);
+    let it = this[routersData];
     let thisMethod = it.spec.addMethod(path, method);
     it.router[method] = it.router[method] || new Set();
     const keys = [];
