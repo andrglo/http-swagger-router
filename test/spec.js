@@ -171,6 +171,22 @@ describe('spec', function() {
         done(e);
       });
   });
+  it('get a definition', function(done) {
+    const service = router.findService('get', '/spec?definition=DatabaseError');
+    const ctx = {};
+    const state = {};
+    ctx.params = service.params;
+    ctx.query = service.query;
+    co(service.service(ctx, state))
+      .then(schema => {
+        expect(state.status).to.equal(200);
+        expect(schema.properties.name.type).equal('string');
+        done();
+      })
+      .catch(e => {
+        done(e);
+      });
+  });
   it('mount a route', function() {
     const router2 = new Router();
     router2.get('/public', pubRoute);

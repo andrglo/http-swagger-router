@@ -222,8 +222,15 @@ class Router {
     this[routersData] = {prefix, spec, router: {}, mounted: []};
     const self = this;
     this
-      .get('/spec', function *() {
-        return self.spec.get();
+      .get('/spec', function *(ctx) {
+        const spec = self.spec.get();
+        const definition = ctx.query.definition;
+        if (definition) {
+          return definition in spec.definitions ?
+            spec.definitions[definition] :
+            undefined;
+        }
+        return spec;
       })
       .params({
         in: 'query',
