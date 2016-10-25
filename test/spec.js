@@ -134,6 +134,17 @@ describe('spec', function() {
     expect(service.params).to.eql({p1: 'q', p2: 'b'});
     assert(isGenerator(service.service()));
   });
+  it('get service and query', function() {
+    const service = router.findService('get', '/query?a=1&b=2');
+    expect(service.query).to.eql({a: '1', b: '2'});
+    assert(isGenerator(service.service()));
+  });
+  it('get service and params and query', function() {
+    const service = router.findService('get', '/modules/q/b/?a=1');
+    expect(service.params).to.eql({p1: 'q', p2: 'b'});
+    expect(service.query).to.eql({a: '1'});
+    assert(isGenerator(service.service()));
+  });
   it('Should return a 400 error', function(done) {
     const service = router.findService('get', '/error400');
     const state = {};
@@ -223,6 +234,20 @@ function addSomeCrudRoutes(router, name, entity) {
     }])
     .onSuccess({
       description: 'A list of available modules',
+      schema: {
+        type: 'array',
+        items: {
+          type: 'string'
+        }
+      }
+    });
+
+  router
+    .get(`/query`, function *() {
+      return ['none'];
+    })
+    .onSuccess({
+      description: 'A query',
       schema: {
         type: 'array',
         items: {

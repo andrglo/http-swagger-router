@@ -4,7 +4,8 @@ const extend = require('deep-extend');
 const path = require('path');
 const findUp = require('findup-sync');
 const titleCase = require('title-case');
-const pathToRegexp = require('path-to-regexp')
+const pathToRegexp = require('path-to-regexp');
+const querystring = require('querystring');
 
 const onSuccess = [
   {
@@ -84,10 +85,16 @@ class Method {
     const data = methodsData.get(this);
     data.onSuccess = [];
     toArray(response)
-      .forEach(response => data.onSuccess.push(toSpecResponse(data.parent, response, 200)));
+      .forEach(response => data.onSuccess.push(
+        toSpecResponse(data.parent, response, 200)
+      ));
     data.spec.responses = Object.assign({},
-      data.onSuccess.reduce((result, response) => Object.assign(result, response), {}),
-      data.onError.reduce((result, response) => Object.assign(result, response), {}));
+      data.onSuccess.reduce(
+        (result, response) => Object.assign(result, response), {}
+      ),
+      data.onError.reduce(
+        (result, response) => Object.assign(result, response), {}
+      ));
     return this;
   }
 
@@ -95,10 +102,18 @@ class Method {
     const data = methodsData.get(this);
     data.onError = [];
     toArray(response)
-      .forEach(response => data.onError.push(toSpecResponse(data.parent, response, 400)));
+      .forEach(
+        response => data.onError.push(
+          toSpecResponse(data.parent, response, 400)
+        )
+      );
     data.spec.responses = Object.assign({},
-      data.onSuccess.reduce((result, response) => Object.assign(result, response), {}),
-      data.onError.reduce((result, response) => Object.assign(result, response), {}));
+      data.onSuccess.reduce(
+        (result, response) => Object.assign(result, response), {}
+      ),
+      data.onError.reduce(
+        (result, response) => Object.assign(result, response), {}
+      ));
     return this;
   }
 
@@ -181,9 +196,12 @@ class Spec {
 
   addMethod(path, method) {
     let it = specsData.get(this);
-    path = path.replace(/\:(\w*)/g, (match, name) => `{${name}}`);
+    path = path.replace(/:(\w*)/g, (match, name) => `{${name}}`);
     it.spec.paths[path] = it.spec.paths[path] || {};
-    assert(it.spec.paths[path][method] === void 0, `Method ${method} already defined for path ${path}`);
+    assert(
+      it.spec.paths[path][method] === undefined,
+      `Method ${method} already defined for path ${path}`
+    );
     return new Method(it.spec.paths[path][method] = {}, path, method, this);
   }
 
@@ -235,7 +253,14 @@ class Router {
         const services = router.router[routersData].router[method] || [];
         var service;
         for (const data of services) {
-          const match = data.regExp.exec(path.substr(router.prefix.length - 1));
+          let query;
+          let basePath = path.substr(router.prefix.length - 1);
+          const queryBeginsAt = basePath.indexOf('?');
+          if (queryBeginsAt > -1) {
+            query = querystring.parse(basePath.substr(queryBeginsAt + 1));
+            basePath = basePath.substr(0, queryBeginsAt);
+          }
+          const match = data.regExp.exec(basePath);
           if (match) {
             const params = {};
             data.keys.forEach((key, index) => {
@@ -243,6 +268,7 @@ class Router {
             });
             service = {
               params,
+              query,
               service: data.service
             };
             break;
@@ -310,7 +336,8 @@ function toSpecParam(param) {
   specParam.in = param.in || 'query';
   specParam.name = param.name;
   specParam.description = param.description || '';
-  specParam.required = specParam.in === 'path' ? true : param.required === true || false;
+  specParam.required =
+    specParam.in === 'path' ? true : param.required === true || false;
   if (param.schema) {
     specParam.schema = typeof param.schema === 'string' ? {
       $ref: `#/definitions/${param.schema}`
@@ -362,7 +389,9 @@ function toSpecResponse(spec, response, status) {
     statusObject.name = response.name || response.schema;
     delete response.items;
   }
-  statusObject.description = response.description || (status >= 400 ? 'Error' : 'Success');
+  statusObject.description = response.description || (
+      status >= 400 ? 'Error' : 'Success'
+    );
   if (status >= 400) {
     Object.defineProperty(statusObject, 'show', {
       value: response.show || (error => ({message: error.message}))
@@ -467,7 +496,6 @@ function toJsonSchema(schema, level) {
     definition.required = required;
   }
   return definition;
-
 }
 
 module.exports = Router;
