@@ -1,5 +1,4 @@
 const AssertionError = 'AssertionError';
-const TimeoutError = 'TimeoutError';
 
 const errorSchema = {
   properties: {
@@ -12,35 +11,22 @@ const errorSchema = {
   }
 };
 
-const errors = {
+const assertion = [{
+  name: AssertionError,
+  schema: errorSchema,
+  catch: [AssertionError],
+  show: error => ({
+    name: 'AssertionError',
+    message: error.message
+  })
+}];
+
+module.exports = {
   schemas: {
     errorSchema
   },
-  assertion: [{
-    name: AssertionError,
-    schema: errorSchema,
-    catch: [AssertionError],
-    show: error => ({
-      name: 'AssertionError',
-      message: error.message
-    })
-  }],
-  timeout: [{
-    status: 408,
-    name: TimeoutError,
-    schema: errorSchema,
-    catch: [
-      error => error.code === 'timeout'
-    ],
-    show: error => ({
-      name: TimeoutError,
-      message: 'Tempo de espera esgotado',
-    })
-  }],
+  assertion,
   all: [
-    ...errors.assertion,
-    ...errors.timeout
+    ...assertion
   ]
 };
-
-module.exports = errors;
