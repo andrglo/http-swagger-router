@@ -320,7 +320,7 @@ methods.forEach(function(method) {
           let caught = false;
           errors.forEach(error => {
             error.catch.forEach(fn => {
-              if (!caught && (typeof fn === 'string' ? fn === e.name : fn(e))) {
+              if (!caught && (typeof fn === 'string' ? e.name.startsWith(fn) : fn(e))) {
                 state.status = error.status;
                 state.error = error.show(e, ctx);
                 caught = true;
