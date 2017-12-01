@@ -1,6 +1,6 @@
 {
   "name": "http-swagger-router",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "description": "A http like router using generators that builds a full swagger specification",
   "homepage": "",
   "repository": "andrglo/http-swagger-router",
@@ -18,24 +18,23 @@
     "router"
   ],
   "devDependencies": {
-    "chai": "^3.5.0",
-    "eslint": "^4.4.1",
+    "chai": "^4.1.2",
+    "eslint": "^4.12.1",
     "eslint-config-google": "^0.9.1",
-    "mocha": "^3.1.2",
-    "swagger-parser": "^3.4.1"
+    "mocha": "^4.0.1",
+    "swagger-parser": "^4.0.1"
   },
   "scripts": {
-    "test": "mocha --bail 'test/**/*.js'",
+    "test": "mocha --bail --exit 'test/**/*.js'",
     "test:watch": "npm test -- --watch"
   },
   "license": "MIT",
   "dependencies": {
-    "@ayk/co": "^4.6.4",
     "deep-extend": "^0.5.0",
     "findup-sync": "^2.0.0",
-    "json-refs": "^3.0.0",
+    "json-refs": "^3.0.2",
     "methods": "^1.1.2",
-    "path-to-regexp": "^1.6.0",
+    "path-to-regexp": "^2.1.0",
     "title-case": "^2.1.0"
   }
 }

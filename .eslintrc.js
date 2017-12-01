@@ -1,7 +1,8 @@
 module.exports = {
   "extends": "google",
-  "env": {
-    "es6": true
+  "parserOptions": {
+    "ecmaVersion": 2017,
+    "sourceType": "module"
   },
   "rules": {
     "generator-star-spacing": [
@@ -10,6 +11,7 @@ module.exports = {
         "after": false
       }],
     "comma-dangle": 0,
+    "semi": ["error", "never"],
     "require-jsdoc": 0,
     "no-extra-parens": 2,
     "arrow-parens": ["error", "as-needed"],
@@ -19,6 +21,7 @@ module.exports = {
       "ignoreStrings": true,
       "ignoreTemplateLiterals": true
     }],
-    "no-var": 0
+    "no-var": 0,
+    "camelcase": 0,
   }
 };

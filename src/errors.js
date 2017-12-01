@@ -1,4 +1,4 @@
-const AssertionError = 'AssertionError';
+const AssertionError = 'AssertionError'
 
 const errorSchema = {
   properties: {
@@ -9,17 +9,18 @@ const errorSchema = {
       type: 'string'
     }
   }
-};
+}
 
-const assertion = [{
-  name: AssertionError,
-  schema: errorSchema,
-  catch: [AssertionError],
-  show: error => ({
-    name: 'AssertionError',
-    message: error.message
-  })
-}];
+const assertion = [
+  {
+    name: AssertionError,
+    schema: errorSchema,
+    catch: [AssertionError],
+    show: error => ({
+      name: 'AssertionError',
+      message: error.message
+    })
+  }]
 
 module.exports = {
   schemas: {
@@ -29,4 +30,4 @@ module.exports = {
   all: [
     ...assertion
   ]
-};
+}
