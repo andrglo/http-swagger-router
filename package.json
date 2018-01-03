@@ -1,6 +1,6 @@
 {
   "name": "http-swagger-router",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A http like router using generators that builds a full swagger specification",
   "homepage": "",
   "repository": "andrglo/http-swagger-router",
@@ -19,9 +19,9 @@
   ],
   "devDependencies": {
     "chai": "^4.1.2",
-    "eslint": "^4.12.1",
+    "eslint": "^4.14.0",
     "eslint-config-google": "^0.9.1",
-    "mocha": "^4.0.1",
+    "mocha": "^4.1.0",
     "swagger-parser": "^4.0.1"
   },
   "scripts": {

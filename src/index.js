@@ -311,7 +311,7 @@ methods.forEach(function(method) {
         } catch (e) {
           state.status = e.status || 500
           state.error = {
-            message: e.message,
+            message: typeof e === 'string' ? e : e.message,
             stack: e.stack
           }
           let errors = thisMethod.errors()
