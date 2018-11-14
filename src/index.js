@@ -28,7 +28,7 @@ const methodsData = new WeakMap()
 class Method {
   constructor(spec, path, method, parent) {
 
-    const match = path.match(/^\/(\w*)\/?/)
+    const match = path.match(/^\/(.+)\/?/)
     let prefix
     assert(match && (prefix = match[1]),
       `Path ${path} should be int format /path or /path/anything`)

@@ -1,6 +1,6 @@
 {
   "name": "http-swagger-router",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A http like router using generators that builds a full swagger specification",
   "homepage": "",
   "repository": "andrglo/http-swagger-router",
