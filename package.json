@@ -2,8 +2,7 @@
   "name": "http-swagger-router",
   "version": "2.0.2",
   "description": "A http like router using generators that builds a full swagger specification",
-  "homepage": "",
-  "repository": "andrglo/http-swagger-router",
+  "repository": "https://github.com/andrglo/http-swagger-router.git",
   "author": {
     "name": "Andre Gloria",
     "email": "andredagloria@gmail.com"
@@ -18,23 +17,25 @@
     "router"
   ],
   "devDependencies": {
-    "chai": "^4.1.2",
-    "eslint": "^4.14.0",
-    "eslint-config-google": "^0.9.1",
-    "mocha": "^4.1.0",
-    "swagger-parser": "^4.0.1"
+    "chai": "^4.2.0",
+    "coveralls": "^3.0.3",
+    "eslint": "^5.16.0",
+    "eslint-config-google": "^0.12.0",
+    "mocha": "^6.1.4",
+    "nyc": "^14.1.0",
+    "swagger-parser": "^6.0.5"
   },
   "scripts": {
-    "test": "mocha --bail --exit 'test/**/*.js'",
-    "test:watch": "npm test -- --watch"
+    "test": "nyc mocha --bail --exit 'test/**/*.js'",
+    "test:report:coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "license": "MIT",
   "dependencies": {
-    "deep-extend": "^0.5.0",
-    "findup-sync": "^2.0.0",
-    "json-refs": "^3.0.2",
+    "deep-extend": "^0.6.0",
+    "findup-sync": "^3.0.0",
+    "json-refs": "^3.0.13",
     "methods": "^1.1.2",
-    "path-to-regexp": "^2.1.0",
+    "path-to-regexp": "^3.0.0",
     "title-case": "^2.1.0"
   }
 }
