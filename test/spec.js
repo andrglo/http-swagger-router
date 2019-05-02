@@ -45,40 +45,46 @@ router.get('/public', pubRoute).security([]) // => none
 router.get('/private', async () => {
   return {executed: true}
 })
-router.get('/error400', async () => {
-  assert(false, 'assertion')
-}).onError({
-  name: 'AssertionError',
-  schema: 'other'
-})
-router.get('/error410', async () => {
-  assert(false, 'assertion')
-}).onError([
-  {
-    name: 'AssertionError',
-    schema: {
-      properties: {
-        name: {
-          type: 'string'
-        }
-      }
-    },
-    status: 410,
-    show: (e, ctx) => ({
-      message: 'message is ' + e.message + (ctx.state ? '' : '-error')
+router
+    .get('/error400', async () => {
+      assert(false, 'assertion')
     })
-  }, {
-    name: 'AssertionError',
-    schema: {
-      properties: {
-        name: {
-          type: 'string'
-        }
+    .onError({
+      name: 'AssertionError',
+      schema: 'other'
+    })
+router
+    .get('/error410', async () => {
+      assert(false, 'assertion')
+    })
+    .onError([
+      {
+        name: 'AssertionError',
+        schema: {
+          properties: {
+            name: {
+              type: 'string'
+            }
+          }
+        },
+        status: 410,
+        show: (e, ctx) => ({
+          message: 'message is ' + e.message + (ctx.state ? '' : '-error')
+        })
+      },
+      {
+        name: 'AssertionError',
+        schema: {
+          properties: {
+            name: {
+              type: 'string'
+            }
+          }
+        },
+        status: 400,
+        show: e => ({message: 'message is ' + e.message})
       }
-    },
-    status: 400,
-    show: e => ({message: 'message is ' + e.message})
-  }])
+    ])
 
 describe('spec', function() {
   it('build a route to the spec', function() {
@@ -88,11 +94,7 @@ describe('spec', function() {
   })
   it('should have a valid swagger structure in getter', function(done) {
     const spec = router.spec.get()
-    parser.validate(spec, {
-      $refs: {
-        internal: false // Don't dereference internal $refs, only external
-      }
-    }, function(err) {
+    parser.validate(JSON.parse(JSON.stringify(spec)), function(err) {
       if (err) {
         console.log('Swagger getter specification:\n', JSON.stringify(spec))
         console.log('Error:\n', err)
@@ -139,28 +141,30 @@ describe('spec', function() {
   it('Should return a 400 error', function(done) {
     const service = router.findService('get', '/error400')
     const state = {}
-    service.service({}, state)
-      .then(() => {
-        expect(state.status).to.equal(400)
-        expect(state.error).to.eql({message: 'assertion'})
-        done()
-      })
-      .catch(e => {
-        done(e)
-      })
+    service
+        .service({}, state)
+        .then(() => {
+          expect(state.status).to.equal(400)
+          expect(state.error).to.eql({message: 'assertion'})
+          done()
+        })
+        .catch(e => {
+          done(e)
+        })
   })
   it('Should return a 410 error', function(done) {
     const service = router.findService('get', '/error410')
     const state = {}
-    service.service({}, state)
-      .then(() => {
-        expect(state.status).to.equal(410)
-        expect(state.error).to.eql({message: 'message is assertion-error'})
-        done()
-      })
-      .catch(e => {
-        done(e)
-      })
+    service
+        .service({}, state)
+        .then(() => {
+          expect(state.status).to.equal(410)
+          expect(state.error).to.eql({message: 'message is assertion-error'})
+          done()
+        })
+        .catch(e => {
+          done(e)
+        })
   })
   it('get a definition', function(done) {
     const service = router.findService('get', '/spec?definition=DatabaseError')
@@ -168,15 +172,16 @@ describe('spec', function() {
     const state = {}
     ctx.params = service.params
     ctx.query = service.query
-    service.service(ctx, state)
-      .then(schema => {
-        expect(state.status).to.equal(200)
-        expect(schema.properties.name.type).equal('string')
-        done()
-      })
-      .catch(e => {
-        done(e)
-      })
+    service
+        .service(ctx, state)
+        .then(schema => {
+          expect(state.status).to.equal(200)
+          expect(schema.properties.name.type).equal('string')
+          done()
+        })
+        .catch(e => {
+          done(e)
+        })
   })
   it('mount a route', function() {
     const router2 = new Router()
@@ -210,15 +215,15 @@ function addSomeCrudRoutes(router, name, entity) {
       }
     }
   })
-  let show = error => ({
+  const show = error => ({
     name: 'DatabaseError',
     message: error.message,
     details: []
   })
 
-  let queryColumns = []
+  const queryColumns = []
   Object.keys(schema.properties).forEach(key => {
-    let column = schema.properties[key]
+    const column = schema.properties[key]
     if (column.type !== 'object' && column.type !== 'array') {
       queryColumns.push({
         name: key,
@@ -234,171 +239,177 @@ function addSomeCrudRoutes(router, name, entity) {
     description: 'None',
     properties: {
       method: {
-        type: 'string',
+        type: 'string'
       }
     }
   })
 
   router
-    .get(`/modules/:p1/:p2`, async () => {
-      return ['none']
-    })
-    .params([
-      {
-        in: 'path',
-        name: 'p1'
-      }, {
-        in: 'path',
-        name: 'p2'
-      }])
-    .onSuccess({
-      description: 'A list of available modules',
-      schema: {
-        type: 'array',
-        items: {
-          type: 'string'
+      .get(`/modules/:p1/:p2`, async () => {
+        return ['none']
+      })
+      .params([
+        {
+          in: 'path',
+          name: 'p1'
+        },
+        {
+          in: 'path',
+          name: 'p2'
         }
-      }
-    })
-
-  router
-    .get(`/query`, async () => {
-      return ['none']
-    })
-    .onSuccess({
-      description: 'A query',
-      schema: {
-        type: 'array',
-        items: {
-          type: 'string'
-        }
-      }
-    })
-
-  router
-    .get(`/${name}`, async ({criteria, query}) => {
-      if (criteria) {
-        criteria = JSON.parse(criteria)
-        criteria.where = criteria.where || {}
-      } else {
-        criteria = {
-          where: {}
-        }
-      }
-      queryColumns.forEach(column => {
-        let value = query[column.name]
-        if (value) {
-          criteria.where[column.name] = value
+      ])
+      .onSuccess({
+        description: 'A list of available modules',
+        schema: {
+          type: 'array',
+          items: {
+            type: 'string'
+          }
         }
       })
-      return criteria
-    })
-    .description('Get a list of available modules')
-    .summary('Summary')
-    .description(`Get ${name} list`)
-    .params([
-      {
-        name: 'criteria',
-        description: 'Filter, order and or pagination to apply'
-      }].concat(queryColumns))
-    .onSuccess({
-      items: name
-    })
-    .onError({
-      name: 'DatabaseError',
-      catch: ['EntityError', 'RequestError'],
-      show
-    })
 
   router
-    .get(`/${name}/:${primaryKey}`, async () => {
-      return recordset[0]
-    })
-    .params({
-      in: 'path',
-      name: primaryKey,
-      description: `${name} to be find`
-    })
-    .onSuccess({
-      items: name
-    })
-    .onError({
-      schema: 'EntityError'
-    })
+      .get(`/query`, async () => {
+        return ['none']
+      })
+      .onSuccess({
+        description: 'A query',
+        schema: {
+          type: 'array',
+          items: {
+            type: 'string'
+          }
+        }
+      })
 
   router
-    .post(`/${name}`, async ({body}) => {
-      return body
-    })
-    .params({
-      in: 'body',
-      name: 'body',
-      description: `${name} to be added`,
-      required: true,
-      schema: name
-    })
-    .onSuccess({
-      name,
-      status: 201
-    })
-    .onError({
-      schema: 'EntityError'
-    })
+      .get(`/${name}`, async ({criteria, query}) => {
+        if (criteria) {
+          criteria = JSON.parse(criteria)
+          criteria.where = criteria.where || {}
+        } else {
+          criteria = {
+            where: {}
+          }
+        }
+        queryColumns.forEach(column => {
+          const value = query[column.name]
+          if (value) {
+            criteria.where[column.name] = value
+          }
+        })
+        return criteria
+      })
+      .description('Get a list of available modules')
+      .summary('Summary')
+      .description(`Get ${name} list`)
+      .params(
+          [
+            {
+              name: 'criteria',
+              description: 'Filter, order and or pagination to apply'
+            }
+          ].concat(queryColumns)
+      )
+      .onSuccess({
+        items: name
+      })
+      .onError({
+        name: 'DatabaseError',
+        catch: ['EntityError', 'RequestError'],
+        show
+      })
 
   router
-    .put(`/${name}/:${primaryKey}`, async ({body, params}) => {
-      return body
-    })
-    .params([
-      {
+      .get(`/${name}/:${primaryKey}`, async () => {
+        return recordset[0]
+      })
+      .params({
         in: 'path',
         name: primaryKey,
-        description: 'Object id'
-      }, {
+        description: `${name} to be find`
+      })
+      .onSuccess({
+        items: name
+      })
+      .onError({
+        schema: 'EntityError'
+      })
+
+  router
+      .post(`/${name}`, async ({body}) => {
+        return body
+      })
+      .params({
         in: 'body',
-        name: 'updatedAt',
-        description: `${primaryKey} to be updated`,
+        name: 'body',
+        description: `${name} to be added`,
         required: true,
         schema: name
-      }])
-    .onSuccess({
-      items: name
-    })
-    .onError({
-      schema: 'EntityError'
-    })
+      })
+      .onSuccess({
+        name,
+        status: 201
+      })
+      .onError({
+        schema: 'EntityError'
+      })
 
   router
-    .delete(`/${name}/:${primaryKey}`, async ({body, params}) => {
-    })
-    .params([
-      {
-        in: 'path',
-        name: primaryKey,
-        description: 'Object id',
-        required: true,
-        type: 'integer'
-      }, {
-        in: 'body',
-        name: 'updatedAt',
-        description: 'Last update timestamp',
-        required: true,
-        schema: {
-          type: 'object',
-          properties: {
-            updatedAt: {
-              type: 'string',
-              format: 'date-time'
+      .put(`/${name}/:${primaryKey}`, async ({body, params}) => {
+        return body
+      })
+      .params([
+        {
+          in: 'path',
+          name: primaryKey,
+          description: 'Object id'
+        },
+        {
+          in: 'body',
+          name: 'updatedAt',
+          description: `${primaryKey} to be updated`,
+          required: true,
+          schema: name
+        }
+      ])
+      .onSuccess({
+        items: name
+      })
+      .onError({
+        schema: 'EntityError'
+      })
+
+  router
+      .delete(`/${name}/:${primaryKey}`, async ({body, params}) => {})
+      .params([
+        {
+          in: 'path',
+          name: primaryKey,
+          description: 'Object id',
+          required: true,
+          type: 'integer'
+        },
+        {
+          in: 'body',
+          name: 'updatedAt',
+          description: 'Last update timestamp',
+          required: true,
+          schema: {
+            type: 'object',
+            properties: {
+              updatedAt: {
+                type: 'string',
+                format: 'date-time'
+              }
             }
           }
         }
-      }])
-    .onSuccess({
-      status: 204
-    })
-    .onError({
-      schema: 'EntityError'
-    })
+      ])
+      .onSuccess({
+        status: 204
+      })
+      .onError({
+        schema: 'EntityError'
+      })
 }
-
-

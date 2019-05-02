@@ -27,11 +27,12 @@ const methodsData = new WeakMap()
 
 class Method {
   constructor(spec, path, method, parent) {
-
     const match = path.match(/^\/(.+)\/?/)
     let prefix
-    assert(match && (prefix = match[1]),
-      `Path ${path} should be int format /path or /path/anything`)
+    assert(
+        match && (prefix = match[1]),
+        `Path ${path} should be int format /path or /path/anything`
+    )
 
     Object.assign(spec, {
       tags: [prefix],
@@ -70,49 +71,52 @@ class Method {
 
   params(params) {
     this.bodyRequested = false
-    methodsData.get(this).spec.parameters = toArray(params)
-      .map(param => {
-        if (param.in === 'body') {
-          this.bodyRequested = true
-        }
-        return toSpecParam(param)
-      })
+    methodsData.get(this).spec.parameters = toArray(params).map(param => {
+      if (param.in === 'body') {
+        this.bodyRequested = true
+      }
+      return toSpecParam(param)
+    })
     return this
   }
 
   onSuccess(response) {
     const data = methodsData.get(this)
     data.onSuccess = []
-    toArray(response)
-      .forEach(response => data.onSuccess.push(
-        toSpecResponse(data.parent, response, 200)
-      ))
-    data.spec.responses = Object.assign({},
-      data.onSuccess.reduce(
-        (result, response) => Object.assign(result, response), {}
-      ),
-      data.onError.reduce(
-        (result, response) => Object.assign(result, response), {}
-      ))
+    toArray(response).forEach(response =>
+      data.onSuccess.push(toSpecResponse(data.parent, response, 200))
+    )
+    data.spec.responses = Object.assign(
+        {},
+        data.onSuccess.reduce(
+            (result, response) => Object.assign(result, response),
+            {}
+        ),
+        data.onError.reduce(
+            (result, response) => Object.assign(result, response),
+            {}
+        )
+    )
     return this
   }
 
   onError(response) {
     const data = methodsData.get(this)
     data.onError = []
-    toArray(response)
-      .forEach(
-        response => data.onError.push(
-          toSpecResponse(data.parent, response, 400)
+    toArray(response).forEach(response =>
+      data.onError.push(toSpecResponse(data.parent, response, 400))
+    )
+    data.spec.responses = Object.assign(
+        {},
+        data.onSuccess.reduce(
+            (result, response) => Object.assign(result, response),
+            {}
+        ),
+        data.onError.reduce(
+            (result, response) => Object.assign(result, response),
+            {}
         )
-      )
-    data.spec.responses = Object.assign({},
-      data.onSuccess.reduce(
-        (result, response) => Object.assign(result, response), {}
-      ),
-      data.onError.reduce(
-        (result, response) => Object.assign(result, response), {}
-      ))
+    )
     return this
   }
 
@@ -137,107 +141,98 @@ const specsData = new WeakMap()
 class Spec {
   constructor(options) {
     options = options || {}
-
-    let spec = options.spec
-
-    /*eslint-disable*/
-    let dirname = options.__dirname
-    /*eslint-enable*/
-
+    const spec = options.spec
+    const dirname = options.__dirname
     const pack = require(findUp('package.json', {
       cwd: dirname || path.dirname(module.parent.filename)
     }))
 
-    let it = {}
-    it.spec = extend({
-      swagger: '2.0',
-      info: {
-        title: titleCase(pack.name),
-        description: pack.description,
-        version: pack.version,
-        contact: {
-          name: pack.author && pack.author.name
+    const it = {}
+    it.spec = extend(
+        {
+          swagger: '2.0',
+          info: {
+            title: titleCase(pack.name),
+            description: pack.description,
+            version: pack.version,
+            contact: {
+              name: pack.author && pack.author.name
+            },
+            license: {
+              name: pack.private === true ? 'Proprietary' : pack.license
+            }
+          },
+          produces: ['application/json', 'text/plain; charset=utf-8'],
+          schemes: ['https'],
+          securityDefinitions: {
+            internalApiKey: {
+              type: 'apiKey',
+              name: 'api_key',
+              in: 'header'
+            }
+          }
         },
-        license: {
-          name: pack.private === true ? 'Proprietary' : pack.license
-        }
-      },
-      produces: [
-        'application/json',
-        'text/plain; charset=utf-8'
-      ],
-      schemes: [
-        'https'
-      ],
-      securityDefinitions: {
-        internalApiKey: {
-          type: 'apiKey',
-          name: 'api_key',
-          in: 'header'
-        }
-      }
-    }, spec)
+        spec
+    )
 
-    it.spec.paths = spec && spec.paths || {}
-    it.spec.definitions = spec && spec.definitions || {}
+    it.spec.paths = (spec && spec.paths) || {}
+    it.spec.definitions = (spec && spec.definitions) || {}
     specsData.set(this, it)
   }
 
   setBasePath(basePath) {
-    let it = specsData.get(this)
+    const it = specsData.get(this)
     it.spec.basePath = basePath
   }
 
   addDefinition(name, definition) {
-    let it = specsData.get(this)
+    const it = specsData.get(this)
     it.spec.definitions[name] = toJsonSchema(definition)
   }
 
   addMethod(path, method) {
-    let it = specsData.get(this)
+    const it = specsData.get(this)
     path = path.replace(/:(\w*)/g, (match, name) => `{${name}}`)
     it.spec.paths[path] = it.spec.paths[path] || {}
     assert(
-      it.spec.paths[path][method] === undefined,
-      `Method ${method} already defined for path ${path}`
+        it.spec.paths[path][method] === undefined,
+        `Method ${method} already defined for path ${path}`
     )
-    return new Method(it.spec.paths[path][method] = {}, path, method, this)
+    return new Method((it.spec.paths[path][method] = {}), path, method, this)
   }
 
   get() {
     return specsData.get(this).spec
   }
-
 }
 
 const routersData = '_data'
 
 class Router {
-
   constructor(options) {
     options = options || {}
     const prefix = options.prefix
     const spec = new Spec(options)
     this[routersData] = {prefix, spec, router: {}, mounted: []}
     const self = this
-    this
-      .get('/spec', async ctx => {
-        const spec = self.spec.get()
-        const definition = ctx.query.definition
-        if (definition) {
-          return definition in spec.definitions ? spec.definitions[definition]
-            : undefined
-        }
-        return spec
-      })
-      .params({
-        in: 'query',
-        name: 'definition',
-        description: 'Fetch only the requested definition'
-      })
-      .onSuccess({
-        description: 'A swagger specification or definition'
-      })
+    this.get('/spec', async ctx => {
+      const spec = self.spec.get()
+      const definition = ctx.query.definition
+      if (definition) {
+        return definition in spec.definitions
+          ? spec.definitions[definition]
+          : undefined
+      }
+      return spec
+    })
+        .params({
+          in: 'query',
+          name: 'definition',
+          description: 'Fetch only the requested definition'
+        })
+        .onSuccess({
+          description: 'A swagger specification or definition'
+        })
   }
 
   get spec() {
@@ -253,7 +248,8 @@ class Router {
       {
         prefix: '/',
         router: this
-      }].concat(this[routersData].mounted)
+      }
+    ].concat(this[routersData].mounted)
     for (const router of routers) {
       if (path.startsWith(router.prefix)) {
         const services = router.router[routersData].router[method] || []
@@ -290,8 +286,8 @@ class Router {
 
 methods.forEach(function(method) {
   Router.prototype[method] = function(path, service) {
-    let it = this[routersData]
-    let thisMethod = it.spec.addMethod(path, method)
+    const it = this[routersData]
+    const thisMethod = it.spec.addMethod(path, method)
     it.router[method] = it.router[method] || new Set()
     const keys = []
     const regExp = pathToRegexp(path, keys)
@@ -302,7 +298,7 @@ methods.forEach(function(method) {
         try {
           const response = await service(ctx, state)
           if (response !== undefined) {
-            let successStatus = thisMethod.successStatuses()
+            const successStatus = thisMethod.successStatuses()
             if (successStatus.indexOf(state.status) === -1) {
               state.status = successStatus[0]
             }
@@ -314,12 +310,14 @@ methods.forEach(function(method) {
             message: typeof e === 'string' ? e : e.message,
             stack: e.stack
           }
-          let errors = thisMethod.errors()
+          const errors = thisMethod.errors()
           let caught = false
           errors.forEach(error => {
             error.catch.forEach(fn => {
-              if (!caught && (typeof fn === 'string' ? e.name.startsWith(fn)
-                  : fn(e))) {
+              if (
+                !caught &&
+                (typeof fn === 'string' ? e.name.startsWith(fn) : fn(e))
+              ) {
                 state.status = error.status
                 state.error = error.show(e, ctx)
                 caught = true
@@ -334,20 +332,23 @@ methods.forEach(function(method) {
 })
 
 function toArray(any) {
-  return any ? Array.isArray(any) ? any : [any] : []
+  return any ? (Array.isArray(any) ? any : [any]) : []
 }
 
 function toSpecParam(param) {
-  let specParam = {}
+  const specParam = {}
   specParam.in = param.in || 'query'
   specParam.name = param.name
   specParam.description = param.description || ''
   specParam.required =
     specParam.in === 'path' ? true : param.required === true || false
   if (param.schema) {
-    specParam.schema = typeof param.schema === 'string' ? {
-      $ref: `#/definitions/${param.schema}`
-    } : param.schema
+    specParam.schema =
+      typeof param.schema === 'string'
+        ? {
+          $ref: `#/definitions/${param.schema}`
+        }
+        : param.schema
     if (param.type === 'array') {
       specParam.items = specParam.schema
       delete specParam.schema
@@ -364,8 +365,8 @@ function toSpecParam(param) {
 }
 
 function toSpecResponse(spec, response, status) {
-  let specResponse = {}
-  let statusObject = specResponse[response.status || status] = {}
+  const specResponse = {}
+  const statusObject = (specResponse[response.status || status] = {})
   Object.defineProperty(statusObject, 'name', {
     value: response.name,
     writable: true
@@ -395,9 +396,8 @@ function toSpecResponse(spec, response, status) {
     statusObject.name = response.name || response.schema
     delete response.items
   }
-  statusObject.description = response.description || (
-    status >= 400 ? 'Error' : 'Success'
-  )
+  statusObject.description =
+    response.description || (status >= 400 ? 'Error' : 'Success')
   if (status >= 400) {
     Object.defineProperty(statusObject, 'show', {
       value: response.show || (error => ({message: error.message}))
@@ -411,24 +411,31 @@ function toSpecResponse(spec, response, status) {
 
 function toJsonSchema(schema, level) {
   level = level || 0
-  let definition = {}
+  const definition = {}
   Object.keys(schema).forEach(function(key) {
     const value = schema[key]
     if (level === 0) {
-      if (['properties', 'title', 'description', 'type']
-            .indexOf(key) === -1) {
+      if (['properties', 'title', 'description', 'type'].indexOf(key) === -1) {
         key = 'x-' + key
       }
     } else {
-      if (['properties', 'title', 'description', 'type', 'schema', 'items']
-            .indexOf(key) === -1) {
+      if (
+        [
+          'properties',
+          'title',
+          'description',
+          'type',
+          'schema',
+          'items'
+        ].indexOf(key) === -1
+      ) {
         key = 'x-' + key
       }
     }
     switch (typeof value) {
-      //case 'function':
+      // case 'function':
       //  break;
-      //case 'array':
+      // case 'array':
       //  definition[key] = value.slice(0);
       //  break;
       case 'object':
@@ -440,20 +447,30 @@ function toJsonSchema(schema, level) {
   })
   const required = []
   Object.keys(definition.properties).forEach(function(key) {
-    let source = definition.properties[key]
+    const source = definition.properties[key]
     if (source.required === true) {
       required.push(key)
     }
-    let property = {}
+    const property = {}
     Object.keys(source).forEach(function(key) {
       if (key === 'required') {
         return
       }
       const value = source[key]
-      if ([
-            'title', 'description', 'type', 'schema', 'properties',
-            '$ref', 'maxLength', 'format', 'enum', 'items']
-            .indexOf(key) === -1) {
+      if (
+        [
+          'title',
+          'description',
+          'type',
+          'schema',
+          'properties',
+          '$ref',
+          'maxLength',
+          'format',
+          'enum',
+          'items'
+        ].indexOf(key) === -1
+      ) {
         key = 'x-' + key
       }
       property[key] = value
@@ -475,15 +492,14 @@ function toJsonSchema(schema, level) {
           property.items = {}
           Object.keys(source.items).forEach(function(key) {
             const value = source.items[key]
-            if (['type']
-                  .indexOf(key) === -1) {
+            if (['type'].indexOf(key) === -1) {
               key = 'x-' + key
             }
             property.items[key] = value
           })
         }
       } else if (property.schema) {
-        let schema = {}
+        const schema = {}
         if (property.schema.$ref) {
           schema['x-$ref'] = property.schema.$ref
         }
