@@ -1,6 +1,6 @@
 {
   "name": "http-swagger-router",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "A http like router using generators that builds a full swagger specification",
   "repository": "https://github.com/andrglo/http-swagger-router.git",
   "author": {
@@ -18,12 +18,12 @@
   ],
   "devDependencies": {
     "chai": "^4.2.0",
-    "coveralls": "^3.0.4",
-    "eslint": "^5.16.0",
+    "coveralls": "^3.0.5",
+    "eslint": "^6.0.1",
     "eslint-config-google": "^0.13.0",
-    "mocha": "^6.1.4",
+    "mocha": "^6.2.0",
     "nyc": "^14.1.1",
-    "swagger-parser": "^6.0.5"
+    "swagger-parser": "^8.0.0"
   },
   "scripts": {
     "test": "nyc mocha --bail --exit 'test/**/*.js'",
@@ -32,7 +32,7 @@
   "license": "MIT",
   "dependencies": {
     "deep-extend": "^0.6.0",
-    "findup-sync": "^3.0.0",
+    "findup-sync": "^4.0.0",
     "json-refs": "^3.0.13",
     "methods": "^1.1.2",
     "path-to-regexp": "^3.0.0",
