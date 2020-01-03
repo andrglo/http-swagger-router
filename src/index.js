@@ -4,7 +4,7 @@ const extend = require('deep-extend')
 const path = require('path')
 const findUp = require('findup-sync')
 const {titleCase} = require('title-case')
-const pathToRegexp = require('path-to-regexp')
+const {pathToRegexp} = require('path-to-regexp')
 const querystring = require('querystring')
 
 const onSuccess = [
