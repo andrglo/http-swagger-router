@@ -10,23 +10,23 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          name: Restore Yarn Package Cache
+          name: Restore npm Package Cache
           keys:
-            - yarn-packages-{{ checksum "yarn.lock" }}
+            - npm-packages-{{ checksum "npm.lock" }}
       - run:
           name: Install dependencies
           command: |
-            yarn install --frozen-lockfile
+            npm install
       - save_cache:
-          name: Save Yarn Package Cache
-          key: yarn-packages-{{ checksum "yarn.lock" }}
+          name: Save npm Package Cache
+          key: npm-packages-{{ checksum "npm.lock" }}
           paths:
-            - ~/.cache/yarn
+            - ~/.cache/npm
       - run:
           name: Tests
           command: |
-            yarn test
-            yarn test:report:coverage
+            npm run test
+            npm run test:report:coverage
       - persist_to_workspace:
           root: ~/repo
           paths: .
