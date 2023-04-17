@@ -267,11 +267,13 @@ class Router {
             const params = {}
             data.keys.forEach((key, index) => {
               params[key.name] = match[index + 1]
+              basePath = basePath.slice(0, -(match[index + 1].length + 1))
             })
             service = {
               params,
               query,
-              service: data.service
+              service: data.service,
+              basePath
             }
             break
           }
