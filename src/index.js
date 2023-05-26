@@ -326,6 +326,9 @@ methods.forEach(function(method) {
               }
             })
           })
+          if (!caught) {
+            console.error(e)
+          }
         }
       }
     })
