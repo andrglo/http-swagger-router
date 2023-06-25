@@ -191,6 +191,7 @@ class Spec {
   }
 
   addMethod(path, method) {
+    method = method.toLowerCase()
     const it = specsData.get(this)
     path = path.replace(/:(\w*)/g, (match, name) => `{${name}}`)
     it.spec.paths[path] = it.spec.paths[path] || {}
@@ -244,6 +245,7 @@ class Router {
   }
 
   findService(method, path) {
+    method = method.toLowerCase()
     const routers = [
       {
         prefix: '/',
@@ -287,6 +289,7 @@ class Router {
 }
 
 methods.forEach(function(method) {
+  method = method.toLowerCase()
   Router.prototype[method] = function(path, service) {
     const it = this[routersData]
     const thisMethod = it.spec.addMethod(path, method)
